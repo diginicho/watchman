@@ -10,6 +10,7 @@ import "sync"
 type item struct {
 	value  interface{}
 	weight float64
+	algo   string
 }
 
 // newLargest returns a `largest` instance which can be used to track items with the highest weights

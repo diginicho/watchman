@@ -6,15 +6,20 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"reflect"
 	"sync"
+
+	"github.com/adrg/strutil"
+	"github.com/adrg/strutil/metrics"
 )
 
 type Result[T any] struct {
 	Data T
 
 	match           float64
+	algo            string
 	precomputedName string
 	precomputedAlts []string
 }
@@ -44,6 +49,38 @@ func (e Result[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(result)
 }
 
+func calculateBestWeight(s1, s2 string) (float64, string) {
+	var weight float64
+	var algo string
+
+	if s1 == s2 {
+		weight = 1
+		algo = "direct"
+		fmt.Println("direct match found, ding ding ding")
+		return weight, algo
+	}
+	jwWeight := jaroWinkler(s1, s2)
+	dlWeight := strutil.Similarity(s1, s2, metrics.NewLevenshtein())
+	hamWeight := strutil.Similarity(s1, s2, metrics.NewHamming())
+
+	if jwWeight > dlWeight && jwWeight > hamWeight {
+		weight = jwWeight
+		algo = "Jaro-Winkler"
+	}
+	if dlWeight > jwWeight && dlWeight > hamWeight {
+		weight = dlWeight
+		algo = "Levenshtein"
+	}
+	if hamWeight > dlWeight && hamWeight > jwWeight {
+		weight = hamWeight
+		algo = "Hamming"
+	}
+
+	fmt.Printf("J/W: %v, D/L: %v, HAM: %v\n", jwWeight, dlWeight, hamWeight)
+	fmt.Println(algo, weight)
+	return weight, algo
+}
+
 func topResults[T any](limit int, minMatch float64, name string, data []*Result[T]) []*Result[T] {
 	if len(data) == 0 {
 		return nil
@@ -58,10 +95,12 @@ func topResults[T any](limit int, minMatch float64, name string, data []*Result[
 	for i := range data {
 		go func(i int) {
 			defer wg.Done()
+			weight, algo := calculateBestWeight(data[i].precomputedName, name)
 
 			it := &item{
 				value:  data[i],
-				weight: jaroWinkler(data[i].precomputedName, name),
+				weight: weight,
+				algo:   algo,
 			}
 
 			for _, alt := range data[i].precomputedAlts {
@@ -85,7 +124,8 @@ func topResults[T any](limit int, minMatch float64, name string, data []*Result[
 			}
 			res := &Result[T]{
 				Data:            vv.Data,
-				match:           v.weight,
+				match:           vv.match,
+				algo:            vv.algo,
 				precomputedName: vv.precomputedName,
 				precomputedAlts: vv.precomputedAlts,
 			}

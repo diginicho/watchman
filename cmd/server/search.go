@@ -109,9 +109,12 @@ var (
 	// topAddressesAddress is a compare method for TopAddressesFn to extract and rank .Address
 	topAddressesAddress = func(needleAddr string) func(*Address) *item {
 		return func(add *Address) *item {
+
+			weight, algo := calculateBestWeight(add.address, precompute(needleAddr))
 			return &item{
 				value:  add,
-				weight: jaroWinkler(add.address, precompute(needleAddr)),
+				weight: weight,
+				algo:   algo,
 			}
 		}
 	}
@@ -121,9 +124,11 @@ var (
 	// search criteria.
 	topAddressesCityState = func(needleCityState string) func(*Address) *item {
 		return func(add *Address) *item {
+			weight, algo := calculateBestWeight(add.citystate, precompute(needleCityState))
 			return &item{
 				value:  add,
-				weight: jaroWinkler(add.citystate, precompute(needleCityState)),
+				weight: weight,
+				algo:   algo,
 			}
 		}
 	}
@@ -131,9 +136,11 @@ var (
 	// topAddressesCountry is a compare method for TopAddressesFn to extract and rank .Country
 	topAddressesCountry = func(needleCountry string) func(*Address) *item {
 		return func(add *Address) *item {
+			weight, algo := calculateBestWeight(add.country, precompute(needleCountry))
 			return &item{
 				value:  add,
-				weight: jaroWinkler(add.country, precompute(needleCountry)),
+				weight: weight,
+				algo:   algo,
 			}
 		}
 	}
@@ -259,9 +266,11 @@ func (s *searcher) TopAltNames(limit int, minMatch float64, alt string) []Alt {
 		go func(i int) {
 			defer wg.Done()
 			defer s.Gate.Done()
+			weight, algo := calculateBestWeight(s.Alts[i].name, alt)
 			xs.add(&item{
 				value:  s.Alts[i],
-				weight: jaroWinkler(s.Alts[i].name, alt),
+				weight: weight,
+				algo:   algo,
 			})
 		}(i)
 	}
@@ -378,9 +387,11 @@ func (s *searcher) TopSDNs(limit int, minMatch float64, name string, keepSDN fun
 		go func(i int) {
 			defer wg.Done()
 			defer s.Gate.Done()
+			weight, algo := calculateBestWeight(s.SDNs[i].name, name)
 			xs.add(&item{
 				value:  s.SDNs[i],
-				weight: jaroWinkler(s.SDNs[i].name, name),
+				weight: weight,
+				algo:   algo,
 			})
 		}(i)
 	}
@@ -420,9 +431,11 @@ func (s *searcher) TopDPs(limit int, minMatch float64, name string) []DP {
 		go func(i int) {
 			defer wg.Done()
 			defer s.Gate.Done()
+			weight, algo := calculateBestWeight(s.DPs[i].name, name)
 			xs.add(&item{
 				value:  s.DPs[i],
-				weight: jaroWinkler(s.DPs[i].name, name),
+				weight: weight,
+				algo:   algo,
 			})
 		}(i)
 	}

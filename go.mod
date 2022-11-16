@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/abadojack/whatlanggo v1.0.1
+	github.com/adrg/strutil v0.3.0
 	github.com/antihax/optional v1.0.0
 	github.com/bbalet/stopwords v1.0.0
 	github.com/docker/docker v20.10.13+incompatible
